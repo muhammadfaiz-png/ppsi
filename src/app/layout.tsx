@@ -22,6 +22,8 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+
 export default function RootLayout({
   children,
 }: {
@@ -38,6 +40,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-surface font-body-md text-body-md text-on-surface antialiased flex flex-col min-h-screen">
+        <ServiceWorkerRegister />
         {children}
       </body>
     </html>

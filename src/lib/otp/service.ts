@@ -6,6 +6,14 @@ export const OTP_EXPIRY_MINUTES = 5;
 export const OTP_COOLDOWN_SECONDS = 60;
 export const OTP_MAX_ATTEMPTS = 5;
 
+export function normalizePhoneNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('0')) return '62' + digits.slice(1);
+  if (digits.startsWith('62')) return digits;
+  return '62' + digits;
+}
+
 export function hashOtp(code: string): string {
   return crypto.createHash('sha256').update(code.trim()).digest('hex');
 }

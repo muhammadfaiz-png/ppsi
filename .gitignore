@@ -29,6 +29,7 @@ pnpm-debug.log*
 
 # Private uploads (KTP photos, etc.)
 uploads/private/
+public/uploads/
 
 # OS / Editor
 .DS_Store
