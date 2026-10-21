@@ -7,7 +7,8 @@ import { usePathname } from 'next/navigation';
 export interface TabShellProps {
   children: React.ReactNode;
   user?: {
-    id: number;
+    id?: number;
+    userId?: number;
     displayName: string;
     role: string;
   } | null;
