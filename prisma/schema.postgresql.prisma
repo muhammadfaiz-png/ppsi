@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  farmer
+  buyer
+  admin
+  officer
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum ProductUnit {
+  kg
+  ton
+}
+
+enum ListingStatus {
+  draft
+  active
+  sold_out
+  pending_confirmation
+  suspended
+  archived
+}
+
+enum ReportStatus {
+  pending
+  resolved
+  rejected
+}
+
+enum OtpPurpose {
+  login
+  change_phone
+}
+
+enum ListingEventType {
+  view
+  wa_click
+}
+
+model User {
+  id           Int         @id @default(autoincrement())
+  phoneNumber  String      @unique @map("phone_number")
+  displayName  String      @map("display_name")
+  role         UserRole    @default(buyer)
+  status       UserStatus  @default(active)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  farmerProfile    FarmerProfile?
+  reportsMade      Report[]        @relation("UserReports")
+  priceBoards      PriceBoard[]    @relation("OfficerPriceUpdates")
+  verifiedProfiles FarmerProfile[] @relation("AdminVerifiedProfiles")
+  auditLogs        AuditLog[]      @relation("UserAuditLogs")
+
+  @@map("users")
+}
+
+model FarmerProfile {
+  id                 Int                @id @default(autoincrement())
+  userId             Int                @unique @map("user_id")
+  organizationName   String             @map("organization_name")
+  subdistrict        String
+  addressDetail      String             @map("address_detail")
+  idCardPhoto        String?            @map("id_card_photo")
+  verificationStatus VerificationStatus @default(pending) @map("verification_status")
+  rejectionReason    String?            @map("rejection_reason")
+  verifiedById       Int?               @map("verified_by")
+  verifiedAt         DateTime?          @map("verified_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy         User?              @relation("AdminVerifiedProfiles", fields: [verifiedById], references: [id])
+  listings           ProductListing[]
+
+  @@map("farmer_profiles")
+}
+
+model Category {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  commodities Commodity[]
+
+  @@map("categories")
+}
+
+model Commodity {
+  id             Int              @id @default(autoincrement())
+  categoryId     Int              @map("category_id")
+  name           String           @unique
+  unit           String           @default("kg")
+  icon           String           @default("eco")
+  category       Category         @relation(fields: [categoryId], references: [id])
+  listings       ProductListing[]
+  priceBoards    PriceBoard[]
+
+  @@map("commodities")
+}
+
+model ProductListing {
+  id                   Int            @id @default(autoincrement())
+  profileId            Int            @map("profile_id")
+  commodityId          Int            @map("commodity_id")
+  title                String
+  description          String
+  specificationGrade   String         @map("specification_grade")
+  qualityParamName     String?        @map("quality_param_name")
+  qualityParamValue    String?        @map("quality_param_value")
+  pricePerUnit         Decimal        @map("price_per_unit") @db.Decimal(12, 2)
+  unit                 ProductUnit    @default(kg)
+  stockQuantity        Decimal        @map("stock_quantity") @db.Decimal(10, 2)
+  minOrder             Decimal        @map("min_order") @db.Decimal(10, 2)
+  status               ListingStatus  @default(draft)
+  lastStockConfirmedAt DateTime       @default(now()) @map("last_stock_confirmed_at")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  farmerProfile        FarmerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  commodity            Commodity      @relation(fields: [commodityId], references: [id])
+  photos               ListingPhoto[]
+  reports              Report[]
+  events               ListingEvent[]
+
+  @@index([status, lastStockConfirmedAt])
+  @@index([commodityId, status])
+  @@map("product_listings")
+}
+
+model ListingPhoto {
+  id         Int            @id @default(autoincrement())
+  listingId  Int            @map("listing_id")
+  photoUrl   String         @map("photo_url")
+  order      Int            @default(0)
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  listing    ProductListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_photos")
+}
+
+model PriceBoard {
+  id             Int       @id @default(autoincrement())
+  commodityId    Int       @map("commodity_id")
+  subdistrict    String
+  indicatedPrice Decimal   @map("indicated_price") @db.Decimal(12, 2)
+  unit           String    @default("kg")
+  effectiveDate  DateTime  @map("effective_date")
+  updatedById    Int       @map("updated_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  commodity      Commodity @relation(fields: [commodityId], references: [id])
+  updatedBy      User      @relation("OfficerPriceUpdates", fields: [updatedById], references: [id])
+
+  @@index([commodityId, subdistrict, effectiveDate])
+  @@map("price_boards")
+}
+
+model Report {
+  id          Int            @id @default(autoincrement())
+  reporterId  Int            @map("reporter_id")
+  listingId   Int            @map("listing_id")
+  reason      String
+  status      ReportStatus   @default(pending)
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  reporter    User           @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  listing     ProductListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, listingId])
+  @@index([listingId, status])
+  @@map("reports")
+}
+
+model OtpCode {
+  id          Int        @id @default(autoincrement())
+  phoneNumber String     @map("phone_number")
+  codeHash    String     @map("code_hash")
+  purpose     OtpPurpose @default(login)
+  expiresAt   DateTime   @map("expires_at")
+  attempts    Int        @default(0)
+  consumedAt  DateTime?  @map("consumed_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([phoneNumber, purpose, createdAt])
+  @@map("otp_codes")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actorId   Int?     @map("actor_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  meta      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  actor     User?    @relation("UserAuditLogs", fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+  @@map("audit_logs")
+}
+
+model ListingEvent {
+  id        Int              @id @default(autoincrement())
+  type      ListingEventType
+  listingId Int              @map("listing_id")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  listing   ProductListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId, type, createdAt])
+  @@map("listing_events")
+}
