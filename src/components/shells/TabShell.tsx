@@ -17,10 +17,39 @@ export interface TabShellProps {
 
 export const TabShell: React.FC<TabShellProps> = ({
   children,
-  user,
+  user: initialUser,
   activeTab,
 }) => {
   const pathname = usePathname();
+  const [currentUser, setCurrentUser] = React.useState<TabShellProps['user']>(initialUser);
+
+  React.useEffect(() => {
+    if (initialUser !== undefined) {
+      setCurrentUser(initialUser);
+      return;
+    }
+
+    let isMounted = true;
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.authenticated && data.user) {
+          setCurrentUser({
+            id: data.user.id,
+            userId: data.user.id,
+            displayName: data.user.displayName,
+            role: data.user.role,
+          });
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialUser]);
+
+  const user = currentUser;
 
   // Determine active tab if not explicitly passed
   let currentTab = activeTab;
