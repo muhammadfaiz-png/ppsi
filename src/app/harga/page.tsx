@@ -61,7 +61,7 @@ export default function PriceBoardPage() {
           setCurrentUser(data.user);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fetchPriceData = async () => {
@@ -136,17 +136,15 @@ export default function PriceBoardPage() {
           <Banner
             variant="info"
             title="Sumber Data Resmi"
-            description={`Data diperbarui berkala oleh ${
-              stats?.sourceAgency || 'Dinas Ketahanan Pangan & Pertanian Way Kanan'
-            }. Tanggal pembaruan: ${
-              stats?.lastUpdatedDate
+            description={`Data diperbarui berkala oleh ${stats?.sourceAgency || 'Dinas Ketahanan Pangan & Pertanian Way Kanan'
+              }. Tanggal pembaruan: ${stats?.lastUpdatedDate
                 ? new Date(stats.lastUpdatedDate).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
                 : 'Hari ini'
-            }`}
+              }`}
           />
         </header>
 

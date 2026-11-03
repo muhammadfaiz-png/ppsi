@@ -5,7 +5,7 @@
   "description": "Way Kanan Agro-Commerce - Platform Perdagangan Digital Agribisnis B2B & B2C",
   "scripts": {
     "dev": "node scripts/start-dev.js",
-    "build": "next build",
+    "build": "node scripts/vercel-build.js",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
